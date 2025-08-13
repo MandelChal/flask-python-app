@@ -1,0 +1,48 @@
+name: Build and Push to DockerHub
+
+# מתי הworkflow ירוץ
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+# הגדרת משתני סביבה
+env:
+  DOCKER_IMAGE_NAME: flask-restplus-app
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    
+    steps:
+    # שלב 1: Checkout הקוד
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      
+    # שלב 2: הגדרת Docker Buildx
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+      
+    # שלב 3: התחברות לDockerHub
+    - name: Login to DockerHub
+      uses: docker/login-action@v3
+      with:
+        username: ${{ secrets.DOCKERHUB_USERNAME }}
+        password: ${{ secrets.DOCKERHUB_TOKEN }}
+        
+    # שלב 4: בניית והעלאת התמונה
+    - name: Build and push Docker image
+      uses: docker/build-push-action@v5
+      with:
+        context: .
+        file: ./Dockerfile
+        push: true
+        tags: |
+          ${{ secrets.DOCKERHUB_USERNAME }}/${{ env.DOCKER_IMAGE_NAME }}:latest
+          ${{ secrets.DOCKERHUB_USERNAME }}/${{ env.DOCKER_IMAGE_NAME }}:${{ github.sha }}
+        platforms: linux/amd64,linux/arm64
+        
+    # שלב 5: תצוגת תוצאות
+    - name: Image digest
+      run: echo "Image pushed successfully! 🚀"
